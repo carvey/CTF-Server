@@ -8,7 +8,7 @@ from http.server import SimpleHTTPRequestHandler
 from problems import tcp_problems, udp_problems
 
 HOST = "0.0.0.0"
-HTTP_PORT = 80
+HTTP_PORT = 8080 # need root to run on port 80
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         pass
