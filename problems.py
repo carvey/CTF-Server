@@ -93,17 +93,21 @@ class RepeatAfterMe(ProblemBase):
         else:
             self.send("Took too long!\n")
 
-class SocketSum(ProblemBase):
+class SocketTotal(ProblemBase):
 
-    def handle(self):
-        flag = "mothdesksaucepan"
+    def generate_expression(self, ops, count=None):
+        rng = None
+        if count:
+            rng = range(0, count)
+        else:
+            rand = random.randint(25, 250)
+            rng = range(0, rand)
 
-        rand_list = [random.randint(1, 100) for x in range(0, 3)]
+        rand_list = [random.randint(1, 100) for x in rng]
         rand_str = ""
-        operators = {'+': operator.add, '-': operator.sub}
 
         for i, num in enumerate(rand_list):
-            rand_operator = random.choice(list(operators.keys()))
+            rand_operator = random.choice(list(ops.keys()))
 
             if i != len(rand_list)-1:
                 rand_str += "%s %s " % (num, rand_operator)
@@ -113,7 +117,17 @@ class SocketSum(ProblemBase):
         expr = parser.expr(rand_str)
         total = eval(expr.compile())
 
-        self.send("Send back the total of the following string within .1 seconds:\n%s\n" % rand_str)
+        return rand_str, total
+
+class SocketTotalStatic(SocketTotal):
+
+    def handle(self):
+        flag = "mothdesksaucepan"
+
+        operators = {'+': operator.add}
+        rand_str, total = self.generate_expression(operators, 5)
+
+        self.send("Evaluate the following expression within .1 seconds:\n%s\n" % rand_str)
         response, time_taken = self.timed_receive()
 
         if time_taken < .1:
@@ -124,8 +138,53 @@ class SocketSum(ProblemBase):
         else:
             self.send("Took too long!\n")
                 
+class SocketTotalRandom(SocketTotal):
+
+    def handle(self):
+        flag = "tallunderfrying"
+
+        operators = { '+': operator.add }
+        rand_str, total = self.generate_expression(operators)
+
+        self.send("Evaluate the following expression within .1 seconds:\n%s\n" % rand_str)
+        response, time_taken = self.timed_receive()
+
+        if time_taken < .1:
+            if int(response) == total:
+                self.send_flag(flag)
+            else:
+                self.send("Incorrect.\n")
+        else:
+            self.send("Took too long!\n")
+
+
+class SocketTotalRandomOps(SocketTotal):
+
+    def handle(self):
+        flag = "tallunderfrying"
+
+        operators = { '+': operator.add, '-': operator.sub, '*': operator.mul, '/': operator.truediv }
+        rand_str, total = self.generate_expression(operators)
+
+        self.send("Evaluate the following expression within .1 seconds:\n%s\n" % rand_str)
+        response, time_taken = self.timed_receive()
+
+        if time_taken < .1:
+            if int(response) == total:
+                self.send_flag(flag)
+            else:
+                self.send("Incorrect.\n")
+        else:
+            self.send("Took too long!\n")
 
         
-tcp_problems = {9000: GiveFlag, 9010: AskForFlag, 9020: RepeatAfterMe, 9030: SocketSum}
+tcp_problems = {
+        9000: GiveFlag,
+        9010: AskForFlag,
+        9020: RepeatAfterMe,
+        9030: SocketTotalStatic,
+        9040: SocketTotalRandom,
+        9050: SocketTotalRandomOps
+        }
 udp_problems = {}
 
