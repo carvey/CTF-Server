@@ -5,7 +5,10 @@ import random
 import string
 import operator
 import parser
+import codecs
 
+# defined as a global as this string is referenced in two problems
+JUST_ASK_PASS = "clock"
 
 class ProblemBase(socketserver.BaseRequestHandler):
 
@@ -30,10 +33,13 @@ class ProblemBase(socketserver.BaseRequestHandler):
         print("%s just completed %s!" % (self.client_address[0], self.__class__.__name__))
 
     def receive(self, bytes=1024):
-        return self.request.recv(1024).strip()
+        return self.request.recv(1024).strip().decode()
 
-    def random_string(self, char_count):
-        return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(char_count))
+    def random_string(self, char_count, digits=True):
+        choice_str = string.ascii_lowercase + string.ascii_uppercase
+        if digits:
+            choice_str += string.digits
+        return ''.join(random.choice(choice_str) for _ in range(char_count))
 
     def start_timer(self):
         """
@@ -59,10 +65,11 @@ class GiveFlag(ProblemBase):
         flag = "kitten"
         self.send_flag(flag)
 
-class AskForFlag(ProblemBase):
+class JustAsk(ProblemBase):
 
     def handle(self):
-        flag = "toasteroven"
+        # only modifiy this flag from the globabl var
+        flag = JUST_ASK_PASS
 
         self.send("Send back the following text to receive a flag: 'Give me flag.'\n")
         response = self.receive() 
@@ -84,7 +91,6 @@ class RepeatAfterMe(ProblemBase):
         response = self.receive()
         end = self.stop_timer(start)
 
-        print(end)
         if end < 0.1:
             if response == rand_string.encode():
                 self.send_flag(flag)
@@ -94,6 +100,9 @@ class RepeatAfterMe(ProblemBase):
             self.send("Took too long!\n")
 
 class SocketTotal(ProblemBase):
+    """
+    This class 
+    """
 
     def generate_expression(self, ops, count=None):
         rng = None
@@ -177,14 +186,58 @@ class SocketTotalRandomOps(SocketTotal):
         else:
             self.send("Took too long!\n")
 
+
+class ROT13(ProblemBase):
+
+    def handle(self):
+        flag = "noneedforencryptionwithrot13"
+                
+        rand_string = self.random_string(25, False)
+        self.send("Send back the ROT13 encoding of the following string within .1 seconds: %s\n" % rand_string)
+
+        encoded_string = codecs.encode(rand_string, 'rot_13')
+
+        response, time_taken = self.timed_receive()
+        if end < 0.1:
+            if response == encoded_string:
+                self.send_flag(flag)
+            else:
+                self.send("Incorrect.\n")
+        else:
+            self.send("Took too long!\n")
+
+
+class BadPassword(ProblemBase):
+
+    def handle(self):
+        flag = "shortpasswordsareeasytoremember"
+
+        self.send("The plaintext password of the 'Just Ask' problem had a password that can be found in /usr/share/dict/words. Send that plaintext password to receive a flag.\n")
+
+        while True:
+            response = self.receive()
+
+            # if user disconnects, break the loop to avoid broken pipe
+            if len(response) == 0:
+                break
+
+            # keep asking for JUST_ASK_PASS until the value is given
+            if response == JUST_ASK_PASS:
+                self.send_flag(flag)
+                break
+            else:
+                self.send("Wrong password.\n")
+
         
 tcp_problems = {
-        9000: GiveFlag,
-        9010: AskForFlag,
-        9020: RepeatAfterMe,
-        9030: SocketTotalStatic,
-        9040: SocketTotalRandom,
-        9050: SocketTotalRandomOps
+        8000: GiveFlag,
+        8010: JustAsk,
+        8020: RepeatAfterMe,
+        8030: SocketTotalStatic,
+        8040: SocketTotalRandom,
+        8050: SocketTotalRandomOps,
+        8060: ROT13,
+        8070: BadPassword
         }
 udp_problems = {}
 

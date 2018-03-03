@@ -31,7 +31,7 @@ class CTFSocketServer():
             server_thread.daemon = False
             server_thread.start()
 
-            print("%s started on port: %s" % (problem.__name__, port))
+            print("%s started on tcp port: %s" % (problem.__name__, port))
 
         for problem_port in self.udp_problems:
             server = socketserver.UDPServer((HOST, PORT), problem)
@@ -40,7 +40,7 @@ class CTFSocketServer():
             server_thread.daemon = True
             server_thread.start()
 
-            print("%s started on port: %s", server_thread, port)
+            print("%s started on udp port: %s", server_thread, port)
 
         print("\n-------\n")
 
