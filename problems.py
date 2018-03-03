@@ -11,6 +11,10 @@ import codecs
 JUST_ASK_PASS = "clock"
 
 class ProblemBase(socketserver.BaseRequestHandler):
+    """
+    This class implements functionality that all problems can utilize. It should be extended
+    for all tcp based problems.
+    """
 
     def setup(self):
         return socketserver.BaseRequestHandler.setup(self)
@@ -21,40 +25,52 @@ class ProblemBase(socketserver.BaseRequestHandler):
         return socketserver.BaseRequestHandler.finish(self)
 
     def get_flag(self, flag):
+        """
+        Encode the passed in flag as sha1
+        """
         return hashlib.sha1(flag.encode()).hexdigest()
 
     def send(self, text):
+        """
+        Send text to the user
+        """
         self.request.sendall(text.encode());
 
     def send_flag(self, flag):
+        """
+        Send the flag to the user
+
+        Optionally, this function can be used as a future hook to execute additional
+        actions once a user has completed a challenge. 
+        """
         self.send("Congratulations!\nYour flag is: " + self.get_flag(flag) + '\n')
 
         # this can hook into other logic to handle a user completing a challenge
         print("%s just completed %s!" % (self.client_address[0], self.__class__.__name__))
 
-    def receive(self, bytes=1024):
-        return self.request.recv(1024).strip().decode()
+    def receive(self, num_bytes=1024):
+        """
+        Receive data from the user
+        """
+        return self.request.recv(num_bytes).strip().decode()
 
     def random_string(self, char_count, digits=True):
+        """
+        Generage a random string of length char_count, optionally including numbers
+        """
         choice_str = string.ascii_lowercase + string.ascii_uppercase
         if digits:
             choice_str += string.digits
         return ''.join(random.choice(choice_str) for _ in range(char_count))
 
-    def start_timer(self):
-        """
-        Just making a method for this to simplify the timing process along with a stop_timer method
-        """
-        return time.time()
-
-    def stop_timer(self, start):
-        end = time.time()
-        return end-start
-
     def timed_receive(self, buffer_size=1024):
-        start = self.start_timer()
+        """
+        Get a response from the user, and additionally return the time it took for the user
+        to send back data.
+        """
+        start = time.time()
         response = self.receive(buffer_size)
-        end = self.stop_timer(start)
+        end = time.time() - start
 
         return response, end
 
@@ -87,11 +103,9 @@ class RepeatAfterMe(ProblemBase):
         rand_string = self.random_string(17)
         self.send("Send back the following random string within .1 seconds: %s\n" % rand_string)
 
-        start = self.start_timer()
-        response = self.receive()
-        end = self.stop_timer(start)
+        response, time_taken = self.timed_receive()
 
-        if end < 0.1:
+        if time_taken < 0.1:
             if response == rand_string.encode():
                 self.send_flag(flag)
             else:
@@ -101,7 +115,9 @@ class RepeatAfterMe(ProblemBase):
 
 class SocketTotal(ProblemBase):
     """
-    This class 
+    This class does not implement a handle method and should not be used directly
+    as a problem. Instead it should be extended so that the generate_expression method
+    can be used in the preceeding problems.
     """
 
     def generate_expression(self, ops, count=None):
@@ -228,7 +244,9 @@ class BadPassword(ProblemBase):
             else:
                 self.send("Wrong password.\n")
 
-        
+# tcp_problems dict:
+# key: the tcp port to run the problem on
+# value: reference to the class the problem is implemented in
 tcp_problems = {
         8000: GiveFlag,
         8010: JustAsk,
@@ -239,5 +257,6 @@ tcp_problems = {
         8060: ROT13,
         8070: BadPassword
         }
-udp_problems = {}
+
+udp_problems = {} # functionality not yet built for the server to start up UDP based problems
 
