@@ -4,7 +4,7 @@ Questions are designed to be taken on by those in the C Programming class who ar
 
 #### Usage:
 ```
-python3 server.y
+python3 server.py
 ```
 
 #### Problem Structure
