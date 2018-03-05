@@ -90,7 +90,7 @@ class JustAsk(ProblemBase):
         self.send("Send back the following text to receive a flag: 'Give me flag.'\n")
         response = self.receive() 
 
-        if response == b"Give me flag.":
+        if response == "Give me flag.":
             self.send_flag(flag)
         else:
             self.send("Incorrect.\n")
