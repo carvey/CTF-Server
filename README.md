@@ -1,6 +1,6 @@
 # CTF Server
 
-Questions are designed to be taken on by those in the C Programming class who are able to finish the core set of problems before the course has ended.
+Socket based CTF server designed for quickly adding new problems.
 
 #### Usage:
 ```
